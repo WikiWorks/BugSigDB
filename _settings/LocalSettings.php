@@ -108,6 +108,8 @@ $wgCategoryCollation = 'numeric';
 //# Add more configuration options below.
 
 ############# Custom core settings #############
+$wgFavicon = "$wgScriptPath/favicon.ico";
+
 $wgRestrictDisplayTitle = false;
 
 $wgNamespacesWithSubpages[NS_MAIN] = true;
@@ -138,6 +140,7 @@ $egChameleonLayoutFile = "$IP/skins/chameleon/custom/layouts/navhead.xml";
 
 ############# Extension settings #############
 # Semantic Mediawiki - keep this early
+wfLoadExtension( 'SemanticMediaWiki' );
 enableSemantics( 'bugsigdb.org' ); # Keep this first
 $smwgEntityCollation = $wgCategoryCollation;
 $wgNamespacesWithSubpages[SMW_NS_PROPERTY] = true;
@@ -218,7 +221,7 @@ $wgCaptchaTriggers['badlogin']      = true;
 
 //wfLoadExtension( 'SemanticResultFormats' );
 
-require_once "$IP/extensions/ConfirmAccount/ConfirmAccount.php";
+wfLoadExtension( 'ConfirmAccount' );
 $wgGroupPermissions['*']['createaccount'] = false;
 $wgConfirmAccountContact = "waldronlab@gmail.com";
 
@@ -303,15 +306,16 @@ $wgHooks['SpecialPageBeforeExecute'][] = function( SpecialPage $special, $subPag
 		$special->getOutput()->enableClientCache( false );
 	}
 };
-
+/**
 $wgResourceModules['ext.datatables'] = [
-	'scripts' => [ 'extensions/DataTables/datatables/datatables.min.js' ],
-	'styles' => [ 'extensions/DataTables/datatables/datatables.min.css' ]
+'scripts' => [ 'extensions/DataTables/datatables/datatables.min.js' ],
+'styles' => [ 'extensions/DataTables/datatables/datatables.min.css' ]
 ];
 
 $wgHooks['BeforePageDisplay'][] = function( $out ) {
-	$out->addModules( 'ext.datatables' );
+$out->addModules( 'ext.datatables' );
 };
+ **/
 
 // LinkTarget
 wfLoadExtension( 'LinkTarget' );
@@ -326,12 +330,12 @@ wfLoadExtension( 'ContributionScores' );
 $wgContribScoreIgnoreBots = true;
 $wgContribScoreIgnoreBlockedUsers = true;
 $wgContribScoreIgnoreUsernames = [
-    'Wikiteq',
-    'WikiWorks',
-    'WikiWorks753',
-    'WikiWorks743',
-    'WikiWorks017',
-    'Admin'
+	'Wikiteq',
+	'WikiWorks',
+	'WikiWorks753',
+	'WikiWorks743',
+	'WikiWorks017',
+	'Admin'
 ];
 $wgContribScoreDisableCache = false;
 
@@ -349,20 +353,20 @@ $wgGLSecret = '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';
 $wgGLAppId = '766842223289-f249tnqkmcvq06oq88joriq4a2mi97ak.apps.googleusercontent.com';
 /**
 $wgAuthManagerConfig = [
-        'primaryauth' => [
-                GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class => [
-                        'class' => GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class,
-                        'sort' => 0
-                ]
-        ],
-        'preauth' => [],
-        'secondaryauth' => []
+'primaryauth' => [
+GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class => [
+'class' => GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class,
+'sort' => 0
+]
+],
+'preauth' => [],
+'secondaryauth' => []
 ];
 $wgInvalidUsernameCharacters = ':~';
 $wgUserrightsInterwikiDelimiter = '~';
 $wgGroupPermissions['*']['autocreateaccount'] = true;
 $wgGLAuthoritativeMode = true;
-**/
+ **/
 
 // WLDR-258
 wfLoadExtension( 'DynamicPageList3' );
@@ -378,5 +382,37 @@ if ( !isset( $wgScribuntoEngineConf ) ) {
 // WLDR-312
 $wgScribuntoEngineConf['luasandbox']['cpuLimit'] = 20;
 
+// There is no nginx in front of varnish.
+$wgInternalServer = $wgServer;
+
+// Request from varnish after each links update.
+// This ensures that varnish is always populated but
+// doesn't get overloaded with requests like CdnCacheUpdate would.
+$wgHooks['LinksUpdateComplete'][] = function ( $linksUpdate ) {
+	global $wgCdnServers;
+	$url = $linksUpdate->getTitle()->getInternalURL();
+	// Adapted from CdnCacheUpdate::naivePurge.
+	foreach( $wgCdnServers as $server ) {
+		$urlInfo = wfParseUrl( $url );
+		$urlHost = strlen( $urlInfo['port'] ?? '' )
+			? IPUtils::combineHostAndPort( $urlInfo['host'], (int)$urlInfo['port'] )
+			: $urlInfo['host'];
+		$baseReq = [
+			'method' => 'GET',
+			'url' => $url,
+			'headers' => [
+				'Host' => $urlHost,
+				'Connection' => 'Keep-Alive',
+				'Proxy-Connection' => 'Keep-Alive',
+				'User-Agent' => 'MediaWiki/' . MW_VERSION . ' LinksUpdate',
+			],
+			'proxy' => $server
+		];
+		MediaWiki\MediaWikiServices::getInstance()->getHttpRequestFactory()
+			->createMultiClient()->runMulti( [ $baseReq ] );
+	}
+};
+
 wfLoadExtension( 'SemanticDependencyUpdater' );
 
+wfLoadExtension( 'Gadgets' );

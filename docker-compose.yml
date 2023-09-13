@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3.7'
 services:
     db:
         image: mysql:8.0
@@ -15,14 +15,13 @@ services:
             - ./_data/mysql:/var/lib/mysql
 
     web:
-        image: ghcr.io/wikiteq/taqasta:1.35.8-20230518-69
+        image: ghcr.io/wikiteq/taqasta:1.39.2-20230623-81
         restart: unless-stopped
         extra_hosts:
             - "gateway.docker.internal:host-gateway"
         links:
             - db
             - redis
-            - elasticsearch
         command: bash /entrypoint.sh
         environment:
             # DEFINE THIS VARIABLES IN .env FILE
@@ -37,8 +36,7 @@ services:
             - MW_DB_USER=root
             - MW_DB_PASS=$MW_DB_INSTALLDB_PASS
             - MW_SECRET_KEY
-
-#            - XDEBUG_CONFIG=remote_host=0.0.0.0 remote_enable=1 remote_autostart=Off remote_connect_back=On
+            # - XDEBUG_CONFIG=remote_host=0.0.0.0 remote_enable=1 remote_autostart=Off remote_connect_back=On
             - MW_SITE_SERVER=${MW_SITE_SERVER:-https://bugsigdb.org}
             - MW_SITE_NAME=BugSigDB
             - MW_SITE_LANG=en
@@ -49,7 +47,7 @@ services:
             - MW_LOAD_SKINS=Vector,chameleon
             - MW_DEFAULT_SKIN=chameleon
             - MW_LOAD_EXTENSIONS=GTag,CodeEditor,Nuke,ParserFunctions,ReplaceText,WikiEditor,Interwiki,CodeEditor,Scribunto,SyntaxHighlight_GeSHi,DataTransfer,Variables,PubmedParser,CodeMirror,Loops,MyVariables,Arrays,DisplayTitle,NCBITaxonomyLookup,SemanticExtraSpecialProperties,SemanticResultFormats
-            - MW_SEARCH_TYPE=CirrusSearch
+            - MW_SEARCH_TYPE
             - MW_PROXY_SERVERS=varnish:80
             - MW_CACHE_PURGE_PAUSE=${MW_CACHE_PURGE_PAUSE:-3600}
             - MW_CACHE_PURGE_PAGE=${MW_CACHE_PURGE_PAGE:-Main_Page}
@@ -62,7 +60,7 @@ services:
             - ./_logs/mediawiki:/var/log/mediawiki
             - ./_settings/:/var/www/mediawiki/w/_settings
             - ./_resources/.htaccess:/var/www/mediawiki/.htaccess
-            - ./_resources/favicon.ico:/var/www/mediawiki/favicon.ico
+            - ./_resources/favicon.ico:/var/www/mediawiki/w/favicon.ico
             - ./_resources/logo.png:/var/www/mediawiki/w/logo.png
             - ./_resources/chameleon:/var/www/mediawiki/w/skins/chameleon/custom
             - ./_resources/footer_icons/cuny.png:/var/www/mediawiki/w/cuny.png
@@ -79,7 +77,6 @@ services:
             - ./_resources/googlef2273af339547660.html:/var/www/mediawiki/googlef2273af339547660.html
             - ./entrypoint.sh:/entrypoint.sh
             - ./cache_purge.sh:/cache_purge.sh
-            - sitemap:/mediawiki/sitemap
 
     redis:
         image: "redis:alpine"
@@ -91,6 +88,8 @@ services:
     elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:6.8.23
         restart: unless-stopped
+        profiles:
+            - production
         environment:
             - discovery.type=single-node
             - bootstrap.memory_lock=true
@@ -109,6 +108,8 @@ services:
     matomo:
         image: matomo
         restart: unless-stopped
+        profiles:
+            - production
         links:
             - db
         ports:
@@ -141,6 +142,8 @@ services:
     updateEFO:
         image: python:3.7
         restart: unless-stopped
+        profiles:
+            - production
         environment:
             - MW_BOT_USER
             - MW_BOT_PASSWORD
@@ -152,39 +155,3 @@ services:
             - ./updateEFO/rotatelogs-compress.sh:/rotatelogs-compress.sh
         entrypoint:
             - /updateEFO/updateEFO.sh
-
-    restic:
-        image: ghcr.io/wikiteq/restic-backup-docker:stream
-        restart: unless-stopped
-        links:
-            - db
-        environment:
-            - MW_DB_USER=root
-            - MW_DB_PASS=$MW_DB_INSTALLDB_PASS
-            - MW_DB_NAME=$MW_DB_NAME
-            - RESTIC_REPOSITORY=${MW_RESTIC_REPOSITORY}
-            - RESTIC_PASSWORD=${MW_RESTIC_PASSWORD:-rest1cpassw0rd}
-            - RESTIC_TAG=backup_full
-            - AWS_ACCESS_KEY_ID=${MW_RESTIC_S3_KEY}
-            - AWS_SECRET_ACCESS_KEY=${MW_RESTIC_S3_SECRET}
-            - BACKUP_CRON=0 1 * * 6
-            - CHECK_CRON=0 23 * * 5
-            - RESTIC_FORGET_ARGS=--prune --keep-weekly 1 --keep-monthly 1 --group-by paths
-            # pre-backup script
-            - RESTIC_PRE_BACKUP=if [ ! -d "/data" ]; then mkdir /data; fi && mysqldump -hdb -u$$MW_DB_USER -p$$MW_DB_PASS $$MW_DB_NAME | gzip -c > /data/database.sql.gz
-            # post-backup script
-            - RESTIC_POST_BACKUP=rm /data/database.sql.gz
-            - RESTIC_STREAM=yes
-            - RESTIC_STREAM_CMD=tar -cf - -C /data_mediawiki/ /data/database.sql.gz images
-            - RESTIC_STREAM_FILENAME=full.images.database.tar
-        volumes:
-            # read-only mount of mediawiki data directory for images access
-            - ./_data/mediawiki:/data_mediawiki:ro
-            # restic repository mount
-            - ./_data/restic:/mnt/restic
-            # logs
-            - ./_logs/restic:/var/log
-
-volumes:
-    sitemap:
-
