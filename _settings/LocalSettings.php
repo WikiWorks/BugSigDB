@@ -306,16 +306,6 @@ $wgHooks['SpecialPageBeforeExecute'][] = function( SpecialPage $special, $subPag
 		$special->getOutput()->enableClientCache( false );
 	}
 };
-/**
-$wgResourceModules['ext.datatables'] = [
-'scripts' => [ 'extensions/DataTables/datatables/datatables.min.js' ],
-'styles' => [ 'extensions/DataTables/datatables/datatables.min.css' ]
-];
-
-$wgHooks['BeforePageDisplay'][] = function( $out ) {
-$out->addModules( 'ext.datatables' );
-};
- **/
 
 // LinkTarget
 wfLoadExtension( 'LinkTarget' );
@@ -353,20 +343,20 @@ $wgGLSecret = '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';
 $wgGLAppId = '766842223289-f249tnqkmcvq06oq88joriq4a2mi97ak.apps.googleusercontent.com';
 /**
 $wgAuthManagerConfig = [
-'primaryauth' => [
-GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class => [
-'class' => GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class,
-'sort' => 0
-]
-],
-'preauth' => [],
-'secondaryauth' => []
+        'primaryauth' => [
+                GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class => [
+                        'class' => GoogleLogin\Auth\GooglePrimaryAuthenticationProvider::class,
+                        'sort' => 0
+                ]
+        ],
+        'preauth' => [],
+        'secondaryauth' => []
 ];
 $wgInvalidUsernameCharacters = ':~';
 $wgUserrightsInterwikiDelimiter = '~';
 $wgGroupPermissions['*']['autocreateaccount'] = true;
 $wgGLAuthoritativeMode = true;
- **/
+**/
 
 // WLDR-258
 wfLoadExtension( 'DynamicPageList3' );
@@ -415,4 +405,6 @@ $wgHooks['LinksUpdateComplete'][] = function ( $linksUpdate ) {
 
 wfLoadExtension( 'SemanticDependencyUpdater' );
 
+// MBSD-192
 wfLoadExtension( 'Gadgets' );
+
