@@ -1,4 +1,5 @@
 {$MW_SITE_FQDN:localhost} {
+	{$CADDY_EXTRA}
 	handle_path /matomo/* {
 		reverse_proxy matomo:80
 	}
