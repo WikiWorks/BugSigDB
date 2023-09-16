@@ -1,0 +1,11 @@
+{$MW_SITE_FQDN:localhost} {
+	handle_path /matomo/* {
+		reverse_proxy matomo:80
+	}
+	reverse_proxy varnish:80 {
+		header_up X-Real-IP {remote_host}
+	}
+	log {
+		output file /var/log/caddy/access.log
+  	}
+}
