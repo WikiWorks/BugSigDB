@@ -542,6 +542,13 @@ class EchoEvent extends EchoAbstractEntity implements Bundleable {
 	}
 
 	/**
+	 * @return int|null
+	 */
+	public function getPageId(): ?int {
+		return $this->pageId;
+	}
+
+	/**
 	 * @return RevisionRecord|null
 	 */
 	public function getRevision() {
