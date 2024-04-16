@@ -186,11 +186,13 @@ define("NS_REVIEW", 3100);
 define("NS_REVIEW_TALK", 3101);
 $wgExtraNamespaces[NS_REVIEW] = "Review";
 $wgExtraNamespaces[NS_REVIEW_TALK] = "Review_talk";
-$smwgNamespacesWithSemanticLinks[NS_REVIEW] = true;
-//CategoryLockdown  WLDR-356
-#$wgNamespaceProtection[NS_REVIEW] = [ 'review' ]; # removed in favor of CategoryLockdown
+
+// WLDR-356
+# $wgNamespaceProtection[NS_REVIEW] = [ 'review' ]; # removed in favor of CategoryLockdown
 wfLoadExtension( 'CategoryLockdown' );
 $wgCategoryLockdown['Reviews']['edit'] = 'reviewer';
+
+$smwgNamespacesWithSemanticLinks[NS_REVIEW] = true;
 //wfLoadExtension( 'CodeMirror' );
 $wgDefaultUserOptions['usecodemirror'] = 1;
 //wfLoadExtension( 'MyVariables' );
@@ -228,8 +230,6 @@ wfLoadExtension( 'ConfirmAccount' );
 $wgGroupPermissions['*']['createaccount'] = false;
 $wgConfirmAccountContact = "waldronlab@gmail.com";
 
-$wgMaxArticleSize = 2048 * 4;
-
 $wgGroupPermissions['sysop']['smw-pageedit'] = true;
 $wgPageFormsCacheFormDefinitions = false;
 $wgAllowSiteCSSOnRestrictedPages = true;
@@ -239,12 +239,12 @@ $wgGroupPermissions['sysop']['confirmaccount'] = true;
 $wgDisableCounters = false;
 
 // Bump the limits
-$wgMaxArticleSize = 2048*20;
+$wgMaxArticleSize = 2048*80;
 $wgMaxPPExpandDepth = 40*2;
 $wgMaxPPNodeCount = 1000000*2;
 $wgMaxTemplateDepth = 40*2;
 $wgMaxGeneratedPPNodeCount = 1000000*2;
-$wgExpensiveParserFunctionLimit = 99*2;
+$wgExpensiveParserFunctionLimit = 99*4;
 
 $egLoopsCounterLimit = 3000;
 
@@ -407,7 +407,17 @@ $wgHooks['LinksUpdateComplete'][] = function ( $linksUpdate ) {
 };
 
 wfLoadExtension( 'SemanticDependencyUpdater' );
+// MBSD-256
+$wgSDUUseJobQueue = true;
 
 // MBSD-192
 wfLoadExtension( 'Gadgets' );
 
+// WLDR-351
+wfLoadExtension( 'TextExtracts' );
+$wgWikiSeoEnableAutoDescription = true;
+$wgWikiSeoTryCleanAutoDescription = true;
+$wgPFStringLengthLimit = 10000;
+
+// MBSD-247
+wfLoadExtension( 'EmbedVideo' );

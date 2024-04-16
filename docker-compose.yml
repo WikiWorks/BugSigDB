@@ -69,11 +69,14 @@ services:
             - ./_resources/footer_icons/ww.png:/var/www/mediawiki/w/ww.png
             - ./_resources/footer_icons/bioc.png:/var/www/mediawiki/w/bioc.png
             - ./_resources/extensions/CategoryLockdown:/var/www/mediawiki/w/extensions/CategoryLockdown
+            - ./_resources/extensions/Echo_patched_MBSD-230:/var/www/mediawiki/w/extensions/Echo
+            - ./_resources/extensions/DisplayTitle:/var/www/mediawiki/w/extensions/DisplayTitle # WLDR-366 TODO remove when merged
             - ./_resources/extensions/DynamicPageList3:/var/www/mediawiki/w/extensions/DynamicPageList3
             - ./_resources/extensions/SubpageWatchlist:/var/www/mediawiki/w/extensions/SubpageWatchlist
             - ./_resources/extensions/SemanticScribunto:/var/www/mediawiki/w/extensions/SemanticScribunto
             - ./_resources/extensions/SemanticDependencyUpdater:/var/www/mediawiki/w/extensions/SemanticDependencyUpdater
             - ./_resources/extensions/PageForms:/var/www/mediawiki/w/extensions/PageForms
+            - ./_resources/extensions/CategoryLockdown:/var/www/mediawiki/w/extensions/CategoryLockdown
             - ./_resources/googlef2273af339547660.html:/var/www/mediawiki/googlef2273af339547660.html
             - ./entrypoint.sh:/entrypoint.sh
             - ./cache_purge.sh:/cache_purge.sh
@@ -151,6 +154,38 @@ services:
             - ./updateEFO/rotatelogs-compress.sh:/rotatelogs-compress.sh
         entrypoint:
             - /updateEFO/updateEFO.sh
+
+    restic:
+        image: ghcr.io/wikiteq/restic-backup-docker:stream
+        restart: unless-stopped
+        links:
+            - db
+        environment:
+            - MW_DB_USER=root
+            - MW_DB_PASS=$MW_DB_INSTALLDB_PASS
+            - MW_DB_NAME=$MW_DB_NAME
+            - RESTIC_REPOSITORY=${MW_RESTIC_REPOSITORY}
+            - RESTIC_PASSWORD=${MW_RESTIC_PASSWORD:-rest1cpassw0rd}
+            - RESTIC_TAG=backup_full
+            - AWS_ACCESS_KEY_ID=${MW_RESTIC_S3_KEY}
+            - AWS_SECRET_ACCESS_KEY=${MW_RESTIC_S3_SECRET}
+            - BACKUP_CRON=0 1 * * 6
+            - CHECK_CRON=0 23 * * 5
+            - RESTIC_FORGET_ARGS=--prune --keep-weekly 1 --keep-monthly 2 --group-by paths
+            # pre-backup script
+            - RESTIC_PRE_BACKUP=if [ ! -d "/data" ]; then mkdir /data; fi && mysqldump -hdb -u$$MW_DB_USER -p$$MW_DB_PASS $$MW_DB_NAME | gzip -c > /data/database.sql.gz
+            # post-backup script
+            - RESTIC_POST_BACKUP=rm /data/database.sql.gz
+            - RESTIC_STREAM=yes
+            - RESTIC_STREAM_CMD=tar -cf - -C /data_mediawiki/ /data/database.sql.gz images
+            - RESTIC_STREAM_FILENAME=full.images.database.tar
+        volumes:
+            # read-only mount of mediawiki data directory for images access
+            - ./_data/mediawiki:/data_mediawiki:ro
+            # restic repository mount
+            - ./_data/restic:/mnt/restic
+            # logs
+            - ./_logs/restic:/var/log
 
     caddy:
         image: docker.io/library/caddy:2.4.6-alpine
