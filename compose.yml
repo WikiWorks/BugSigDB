@@ -16,12 +16,16 @@ services:
 
     web:
         image: ghcr.io/wikiteq/taqasta:1.39.5-20231116-124
+        env_file:
+            - ./.env
+            - ./.env.secret
         restart: unless-stopped
         extra_hosts:
             - "gateway.docker.internal:host-gateway"
-        links:
+        depends_on:
             - db
             - redis
+            - elasticsearch
         command: bash /entrypoint.sh
         environment:
             # DEFINE THIS VARIABLES IN .env FILE
@@ -51,7 +55,7 @@ services:
             - MW_PROXY_SERVERS=varnish:80
             - MW_CACHE_PURGE_PAUSE=${MW_CACHE_PURGE_PAUSE:-3600}
             - MW_CACHE_PURGE_PAGE=${MW_CACHE_PURGE_PAGE:-Main_Page}
-            - MW_ENABLE_SITEMAP_GENERATOR=${MW_ENABLE_SITEMAP_GENERATOR:-true}
+            - MW_ENABLE_SITEMAP_GENERATOR # Should be enabled on PROD only
             - PHP_MEMORY_LIMIT=2048M
             - MW_JOB_RUNNER_MEMORY_LIMIT=1G
         volumes:
@@ -91,8 +95,6 @@ services:
     elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:6.8.23
         restart: unless-stopped
-        profiles:
-            - production
         environment:
             - discovery.type=single-node
             - bootstrap.memory_lock=true
@@ -111,9 +113,7 @@ services:
     matomo:
         image: matomo
         restart: unless-stopped
-        profiles:
-            - production
-        links:
+        depends_on:
             - db
         environment:
             - MATOMO_DATABASE_HOST=db
@@ -126,7 +126,10 @@ services:
     varnish:
         image: pastakhov/varnish:7.0
         restart: unless-stopped
-        links:
+        networks:
+            - default
+            - traefik-public
+        depends_on:
             - web
         tmpfs:
             - /var/lib/varnish:exec
@@ -136,18 +139,22 @@ services:
         volumes:
             - ./_resources/varnish:/etc/varnish/
             - ./_data/varnish:/data
-
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-public
+            - traefik.constraint-label=traefik-public
+            - traefik.http.routers.${TRAEFIK_STACK_PREFIX?Variable not set}-varnish.rule=Host(`${MW_SITE_FQDN?Variable not set}`)
+            - traefik.http.routers.${TRAEFIK_STACK_PREFIX?Variable not set}-varnish.entrypoints=websecure
+            - traefik.http.routers.${TRAEFIK_STACK_PREFIX?Variable not set}-varnish.tls.certresolver=le
 
     updateEFO:
         image: python:3.7
+        env_file:
+            - ./.env
+            - ./.env.secret.updateEFO
         restart: unless-stopped
         profiles:
             - production
-        environment:
-            - MW_BOT_USER
-            - MW_BOT_PASSWORD
-            # default is 24 hours
-            - MW_UPDATE_EFO_PAUSE=${MW_UPDATE_EFO_PAUSE:-86400}
         volumes:
             - ./updateEFO:/updateEFO
             - ./_logs/updateEFO:/var/log/updateEFO
@@ -157,6 +164,11 @@ services:
 
     restic:
         image: ghcr.io/wikiteq/restic-backup-docker:stream
+        env_file:
+            - ./.env
+            - ./.env.secret.restic
+        profiles:
+            - production
         restart: unless-stopped
         links:
             - db
@@ -164,11 +176,7 @@ services:
             - MW_DB_USER=root
             - MW_DB_PASS=$MW_DB_INSTALLDB_PASS
             - MW_DB_NAME=$MW_DB_NAME
-            - RESTIC_REPOSITORY=${MW_RESTIC_REPOSITORY}
-            - RESTIC_PASSWORD=${MW_RESTIC_PASSWORD:-rest1cpassw0rd}
             - RESTIC_TAG=backup_full
-            - AWS_ACCESS_KEY_ID=${MW_RESTIC_S3_KEY}
-            - AWS_SECRET_ACCESS_KEY=${MW_RESTIC_S3_SECRET}
             - BACKUP_CRON=0 1 * * 6
             - CHECK_CRON=0 23 * * 5
             - RESTIC_FORGET_ARGS=--prune --keep-weekly 1 --keep-monthly 2 --group-by paths
@@ -182,28 +190,9 @@ services:
         volumes:
             # read-only mount of mediawiki data directory for images access
             - ./_data/mediawiki:/data_mediawiki:ro
-            # restic repository mount
-            - ./_data/restic:/mnt/restic
             # logs
             - ./_logs/restic:/var/log
 
-    caddy:
-        image: docker.io/library/caddy:2.4.6-alpine
-        restart: unless-stopped
-        links:
-            - varnish
-        entrypoint: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
-        environment:
-            - MW_SITE_FQDN=${MW_SITE_FQDN:-localhost}
-            # see https://caddyserver.com/docs/caddyfile/directives/basicauth
-            - CADDY_EXTRA
-        ports:
-            - "${PORT:-80}:80"
-            - "${HTTPS_PORT:-443}:443"
-        volumes:
-            - caddy-data:/data
-            - ./Caddyfile:/etc/caddy/Caddyfile
-            - ./_logs/caddy:/var/log/caddy
-
-volumes:
-    caddy-data:
+networks:
+    traefik-public:
+        external: true
