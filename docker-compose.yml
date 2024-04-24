@@ -15,7 +15,7 @@ services:
             - ./_data/mysql:/var/lib/mysql
 
     web:
-        image: ghcr.io/wikiteq/taqasta:1.35.8-20231101-114
+        image: ghcr.io/wikiteq/taqasta:1.39.7-20240329-179
         restart: unless-stopped
         extra_hosts:
             - "gateway.docker.internal:host-gateway"
