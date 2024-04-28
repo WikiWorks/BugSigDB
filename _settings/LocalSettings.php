@@ -138,9 +138,11 @@ $egChameleonLayoutFile = "$IP/skins/chameleon/custom/layouts/navhead.xml";
 
 ############# Extension settings #############
 # Semantic Mediawiki - keep this early
-enableSemantics( 'bugsigdb.org' ); # Keep this first
+wfLoadExtension( 'SemanticMediaWiki' ); # Keep this first
+enableSemantics( 'bugsigdb.org' );
 $smwgEntityCollation = $wgCategoryCollation;
 $wgNamespacesWithSubpages[SMW_NS_PROPERTY] = true;
+
 $smwgQMaxInlineLimit = 220000;
 # Enable embedded query updates, see MBSD-142
 $smwgEnabledQueryDependencyLinksStore = false;
@@ -223,7 +225,7 @@ $wgCaptchaTriggers['badlogin']      = true;
 
 //wfLoadExtension( 'SemanticResultFormats' );
 
-require_once "$IP/extensions/ConfirmAccount/ConfirmAccount.php";
+wfLoadExtension( 'ConfirmAccount' );
 $wgGroupPermissions['*']['createaccount'] = false;
 $wgConfirmAccountContact = "waldronlab@gmail.com";
 
