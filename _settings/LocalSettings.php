@@ -372,8 +372,8 @@ wfLoadExtension( 'SemanticScribunto' );
 if ( !isset( $wgScribuntoEngineConf ) ) {
 	$wgScribuntoEngineConf = [ 'luasandbox' => [] ];
 }
-// WLDR-312
-$wgScribuntoEngineConf['luasandbox']['cpuLimit'] = 20;
+// WLDR-312, WLDR-362
+$wgScribuntoEngineConf['luasandbox']['cpuLimit'] = 200;
 
 // There is no nginx in front of varnish.
 $wgInternalServer = $wgServer;
