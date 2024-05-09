@@ -421,3 +421,5 @@ $wgPFStringLengthLimit = 10000;
 
 // MBSD-247
 wfLoadExtension( 'EmbedVideo' );
+
+wfLoadExtension( 'SimpleTippy' );
