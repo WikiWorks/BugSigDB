@@ -143,7 +143,7 @@ $egChameleonLayoutFile = "$IP/skins/chameleon/custom/layouts/navhead.xml";
 wfLoadExtension( 'SemanticMediaWiki' );
 enableSemantics( 'bugsigdb.org' ); # Keep this first
 $smwgEntityCollation = $wgCategoryCollation;
-$wgNamespacesWithSubpages[SMW_NS_PROPERTY] = true;
+$wgNamespacesWithSubpages[102] = true; // SMW_NS_PROPERTY
 $smwgQMaxInlineLimit = 220000;
 # Enable embedded query updates, see MBSD-142
 $smwgEnabledQueryDependencyLinksStore = false;
@@ -372,8 +372,8 @@ wfLoadExtension( 'SemanticScribunto' );
 if ( !isset( $wgScribuntoEngineConf ) ) {
 	$wgScribuntoEngineConf = [ 'luasandbox' => [] ];
 }
-// WLDR-312
-$wgScribuntoEngineConf['luasandbox']['cpuLimit'] = 20;
+// WLDR-312, WLDR-362
+$wgScribuntoEngineConf['luasandbox']['cpuLimit'] = 200;
 
 // There is no nginx in front of varnish.
 $wgInternalServer = $wgServer;
@@ -421,3 +421,5 @@ $wgPFStringLengthLimit = 10000;
 
 // MBSD-247
 wfLoadExtension( 'EmbedVideo' );
+
+wfLoadExtension( 'SimpleTippy' );
