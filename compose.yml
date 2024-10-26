@@ -7,7 +7,7 @@ services:
         restart: unless-stopped
         environment:
             - MYSQL_ROOT_HOST=%
-            - MYSQL_ROOT_PASSWORD=$MW_DB_INSTALLDB_PASS
+            - MYSQL_ROOT_PASSWORD=/run/secrets/db_root_password
             - MYSQL_DATABASE=$MW_DB_NAME
         volumes:
             - ./__initdb:/docker-entrypoint-initdb.d
@@ -37,7 +37,7 @@ services:
             - MW_DB_INSTALLDB_USER=root
             - MW_DB_INSTALLDB_PASS
             - MW_DB_USER=root
-            - MW_DB_PASS=$MW_DB_INSTALLDB_PASS
+            - MW_DB_PASS=/run/secrets/db_root_password
             - MW_SECRET_KEY
             # - XDEBUG_CONFIG=remote_host=0.0.0.0 remote_enable=1 remote_autostart=Off remote_connect_back=On
             - MW_SITE_SERVER=${MW_SITE_SERVER:-https://bugsigdb.org}
@@ -118,7 +118,9 @@ services:
             - MATOMO_DATABASE_HOST=db
             - MATOMO_DATABASE_DBNAME=matomo
             - MATOMO_DATABASE_USERNAME=root
-            - MATOMO_DATABASE_PASSWORD=$MW_DB_INSTALLDB_PASS
+            - MATOMO_DATABASE_PASSWORD=/run/secrets/db_root_password
+        secrets:
+            - db_root_password    
         volumes:
             - ./_data/matomo:/var/www/html
             - ./_resources/matomo-bootstrap.php:/var/www/html/bootstrap.php
@@ -140,7 +142,6 @@ services:
             - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-matomo-stripprefix.stripprefix.forceSlash=true
             - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-matomo-headers.headers.customrequestheaders.X-Forwarded-Uri=/${MATOMO_FOLDER:-matomo}
             - traefik.http.routers.${COMPOSE_PROJECT_NAME}-matomo.middlewares=${COMPOSE_PROJECT_NAME}-matomo-stripprefix,${COMPOSE_PROJECT_NAME}-matomo-headers
-
 
     varnish:
         image: pastakhov/varnish:7.0
@@ -244,7 +245,7 @@ services:
             - MW_DB_USER=root
             - MW_DB_PASS=/run/secrets/db_root_password
             - MW_DB_NAME=$MW_DB_NAME
-            - RESTIC_REPOSITORY_FILE=/run/secrets/restic_s3_repository
+            - RESTIC_REPOSITORY_FILE=/run/secrets/restic_gc_repository
             - RESTIC_PASSWORD_FILE=/run/secrets/restic_password
             - RESTIC_TAG=backup_full
             - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcloud_credentials
@@ -304,7 +305,7 @@ secrets:
         file: ./secrets/restic_gc_repository
     gcloud_credentials:
         file: ./secrets/gcloud_credentials
-        
+
 networks:
     traefik-public:
         external: true
