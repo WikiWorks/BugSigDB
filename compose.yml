@@ -11,7 +11,7 @@ services:
             - MYSQL_DATABASE=$MW_DB_NAME
         volumes:
             - ./__initdb:/docker-entrypoint-initdb.d
-            - ./_data/mysql:/var/lib/mysql
+            - db:/var/lib/mysql
 
     web:
         image: ghcr.io/wikiteq/taqasta:1.39.10-20241020-01c2911 # Update to 1.39.10
@@ -58,7 +58,7 @@ services:
             - PHP_MEMORY_LIMIT=4056M
             - MW_JOB_RUNNER_MEMORY_LIMIT=1G
         volumes:
-            - ./_data/mediawiki:/mediawiki
+            - web_data:/mediawiki
             - ./_logs/httpd:/var/log/apache2
             - ./_logs/mediawiki:/var/log/mediawiki
             - ./_settings/:/var/www/mediawiki/w/_settings
@@ -104,7 +104,7 @@ services:
                 soft: -1
                 hard: -1
         volumes:
-            - ./_data/elasticsearch:/usr/share/elasticsearch/data
+            - elasticsearch:/usr/share/elasticsearch/data
 
     matomo:
         image: matomo:5.1.1
@@ -120,7 +120,7 @@ services:
             - MATOMO_DATABASE_USERNAME=root
             - MATOMO_DATABASE_PASSWORD=$MW_DB_INSTALLDB_PASS
         volumes:
-            - ./_data/matomo:/var/www/html
+            - matomo:/var/www/html
             - ./_resources/matomo-bootstrap.php:/var/www/html/bootstrap.php
         labels:
             # Ofelia
@@ -164,7 +164,7 @@ services:
             - ./_resources/varnish:/etc/varnish:ro
             - ./_data/varnish:/data
             - ./_logs/varnish:/var/log/varnish
-            - ./_data/matomo:/var/www/html
+            - matomo:/var/www/html
         labels:
             # Ofelia
             - ofelia.enabled=true
@@ -224,7 +224,7 @@ services:
             - RESTIC_STREAM_FILENAME=full.images.database.tar
         volumes:
             # read-only mount of mediawiki data directory for images access
-            - ./_data/mediawiki:/data_mediawiki:ro
+            - web_data:/data_mediawiki:ro
             # logs
             - ./_logs/restic:/var/log
 
@@ -254,3 +254,9 @@ secrets:
 networks:
     traefik-public:
         external: true
+
+volumes:
+    db:
+    elasticsearch:
+    matomo:
+    web_data:
