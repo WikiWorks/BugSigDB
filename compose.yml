@@ -225,7 +225,7 @@ services:
             - RESTIC_STREAM_FILENAME=full.images.database.tar
         volumes:
             # read-only mount of mediawiki data directory for images access
-            - web_data:/data_mediawiki:ro
+            - images:/data_mediawiki/images:ro
             - restic_data:/mnt/restic
             # logs
             - ./_logs/restic:/var/log
