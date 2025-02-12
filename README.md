@@ -88,11 +88,11 @@ Data that must be persistent across container life cycles are stored in docker v
 - `elasticsearch_data` (Elasticsearch nodes, attached to `elasticsearch` service)
 - `web_data` (Miscellaneous MediaWiki files and directories that must be persistent by design, attached to `web` service )
 - `images` (MediaWiki upload directory, attached to `web` service and used in `restic` service (read-only))
-Docker containers write files to volumes using internal users.
 - `redis_data` (Redis cache)
 - `varnish_data` (Varnish cache)
 - `matomo_data` (Analytics data)
 - `restic_data` (Space mounted to the `restic` service for operations with snapshots)
+Docker containers write files to volumes using internal users.
 
 ## Log files
 
