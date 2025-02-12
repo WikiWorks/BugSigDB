@@ -11,7 +11,7 @@ services:
             - MYSQL_DATABASE=$MW_DB_NAME
         volumes:
             - ./__initdb:/docker-entrypoint-initdb.d
-            - db:/var/lib/mysql
+            - db_data:/var/lib/mysql
 
     web:
         image: ghcr.io/wikiteq/taqasta:1.39.10-20241020-01c2911 # Update to 1.39.10
@@ -59,6 +59,7 @@ services:
             - MW_JOB_RUNNER_MEMORY_LIMIT=1G
         volumes:
             - web_data:/mediawiki
+            - images:/mediawiki/images
             - ./_logs/httpd:/var/log/apache2
             - ./_logs/mediawiki:/var/log/mediawiki
             - ./_settings/:/var/www/mediawiki/w/_settings
@@ -85,7 +86,7 @@ services:
         image: "redis:7.4.0-alpine3.20"
         restart: unless-stopped
         volumes:
-            - ./_data/redis:/data
+            - redis_data:/data
             - ./_resources/redis.conf:/usr/local/etc/redis/redis.conf
 
     elasticsearch:
@@ -104,7 +105,7 @@ services:
                 soft: -1
                 hard: -1
         volumes:
-            - elasticsearch:/usr/share/elasticsearch/data
+            - elasticsearch_data:/usr/share/elasticsearch/data
 
     matomo:
         image: matomo:5.1.1
@@ -120,7 +121,7 @@ services:
             - MATOMO_DATABASE_USERNAME=root
             - MATOMO_DATABASE_PASSWORD=$MW_DB_INSTALLDB_PASS
         volumes:
-            - matomo:/var/www/html
+            - matomo_data:/var/www/html
             - ./_resources/matomo-bootstrap.php:/var/www/html/bootstrap.php
         labels:
             # Ofelia
@@ -162,9 +163,9 @@ services:
             - matomo_password
         volumes:
             - ./_resources/varnish:/etc/varnish:ro
-            - ./_data/varnish:/data
+            - varnish_data:/data
             - ./_logs/varnish:/var/log/varnish
-            - matomo:/var/www/html
+            - matomo_data:/var/www/html
         labels:
             # Ofelia
             - ofelia.enabled=true
@@ -225,6 +226,7 @@ services:
         volumes:
             # read-only mount of mediawiki data directory for images access
             - web_data:/data_mediawiki:ro
+            - restic_data:/mnt/restic
             # logs
             - ./_logs/restic:/var/log
 
@@ -256,7 +258,11 @@ networks:
         external: true
 
 volumes:
-    db:
-    elasticsearch:
-    matomo:
+    db_data:
     web_data:
+    images:
+    redis_data:
+    elasticsearch_data:
+    varnish_data:
+    matomo_data:
+    restic_data:
