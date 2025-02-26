@@ -47,6 +47,7 @@ services:
     restart: always
 
   restic:
+    container_name: ${COMPOSE_PROJECT_NAME}_restic # don't allow to scale the container
     image: ghcr.io/wikiteq/restic-backup-docker:stream
     restart: always
     depends_on:

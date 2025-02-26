@@ -1,12 +1,11 @@
 services:
     db:
+        container_name: ${COMPOSE_PROJECT_NAME}_db # don't allow to scale the container
         image: mysql:8.0
         command: --default-authentication-plugin=mysql_native_password --expire_logs_days=3 --secure-file-priv="" --local-infile=1
         cap_add:
             - SYS_NICE  # CAP_SYS_NICE, fix error mbind: Operation not permitted
         restart: unless-stopped
-        deploy:
-            mode: global
         environment:
             - MYSQL_DATABASE=mediawiki
             - MYSQL_ROOT_HOST=%
@@ -73,19 +72,17 @@ services:
             - ./cache_purge.sh:/cache_purge.sh
 
     redis:
+        container_name: ${COMPOSE_PROJECT_NAME}_redis # don't allow to scale the container
         image: "redis:7.4.0-alpine3.20"
         restart: unless-stopped
-        deploy:
-            mode: global
         volumes:
             - redis_data:/data
             - ./_resources/redis.conf:/usr/local/etc/redis/redis.conf
 
     elasticsearch:
+        container_name: ${COMPOSE_PROJECT_NAME}_elasticsearch # don't allow to scale the container
         image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
         restart: unless-stopped
-        deploy:
-            mode: global
         environment:
             - discovery.type=single-node
             - bootstrap.memory_lock=true
@@ -122,7 +119,8 @@ services:
             - cron.enabled=true
             - cron.maintenance-matomo.schedule=@daily
             - cron.maintenance-matomo.command=./console core:archive --force-all-websites --url="http://matomo"
-            # Traefik (rule and middlewares are set in the override files, keep them synchronized)
+            # Traefik
+            # (rule and middlewares are set in the override files, keep them synchronized)
             # - traefik.http.routers.${COMPOSE_PROJECT_NAME}-matomo.rule=Host(`bugsigdb.org`) && PathPrefix(`/matomo/`)
             # - traefik.http.routers.${COMPOSE_PROJECT_NAME}-matomo.middlewares=${COMPOSE_PROJECT_NAME}-matomo-stripprefix,${COMPOSE_PROJECT_NAME}-matomo-headers
             - traefik.enable=true
@@ -135,10 +133,9 @@ services:
             - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-matomo-headers.headers.customrequestheaders.X-Forwarded-Uri=/matomo
 
     varnish:
+        container_name: ${COMPOSE_PROJECT_NAME}_varnish # don't allow to scale the container
         image: pastakhov/varnish:7.0
         restart: unless-stopped
-        deploy:
-            mode: global
         networks:
             - default
             - traefik-public
@@ -164,7 +161,8 @@ services:
             # Every hour at the 59th minute
             - cron.import_logs_matomo.schedule=0 59 * * *
             - cron.import_logs_matomo.command=import_logs_matomo
-            # Traefik (rule and middlewares are set in the override files, keep them synchronized)
+            # Traefik
+            # (rule and middlewares are set in the override files, keep them synchronized)
             # - traefik.http.routers.${COMPOSE_PROJECT_NAME}-varnish.rule=Host(`bugsigdb.org`)
             # - traefik.http.routers.${COMPOSE_PROJECT_NAME}-varnish.middlewares=crowdsec@file
             - traefik.enable=true
@@ -174,12 +172,9 @@ services:
             - traefik.http.routers.${COMPOSE_PROJECT_NAME}-varnish.tls.certresolver=le
 
     cron:
+        container_name: ${COMPOSE_PROJECT_NAME}_cron # don't allow to scale the container
         image: ghcr.io/wikiteq/cron:20241201-377bd3f
         restart: unless-stopped
-        deploy:
-            mode: global
-        profiles:
-            - production
         environment:
             - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
         volumes:
