@@ -14,5 +14,6 @@ cscope.out
 # Contains private data
 /.env
 
-# A symbolic link to compose.*.yaml file, depends on the server
-/compose.override.ya?ml
+# A symbolic link to compose.*.yml file, depends on the server
+/compose.override.yml
+/compose.override.yaml
