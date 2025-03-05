@@ -65,6 +65,7 @@ services:
       # post-backup script
       - RESTIC_POST_BACKUP=rm /data/images.tar.gz && rm /data/database.sql.gz
       - RESTIC_PASSWORD=${RESTIC_PASSWORD?Variable RESTIC_PASSWORD not set}
+      - RESTIC_REPOSITORY=s3:usc1.contabostorage.com/backups/bugsigdb.org
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Variable AWS_ACCESS_KEY_ID not set}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Variable AWS_SECRET_ACCESS_KEY not set}
     volumes:
