@@ -121,7 +121,8 @@ Data that must be persistent across container life cycles are stored in docker v
 - `varnish_data` (Varnish cache)
 - `matomo_data` (Analytics data)
 - `restic_data` (Space mounted to the `restic` service for operations with snapshots)
-  Docker containers write files to volumes using internal users.
+
+Docker containers write files to volumes using internal users.
 
 ## Log files
 
