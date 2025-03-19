@@ -36,7 +36,7 @@ Settings can be adjusted via the `.env` file created from `.env_example`. Enviro
 Additionally:
 
 - `_resources` directory: contains favicon, logo, styles, and customizations for the chameleon skin and additional MediaWiki extensions.
-- `_settings/CustomSettings.php`: contains settings for MediaWiki core and extensions. If customization is required, change them there.
+- `_settings/LocalSettings.php`: contains settings for MediaWiki core and extensions. If customization is required, change them there.
 - For production backups with restic, create the file `./secrets/restic-GCS-account.json`, containing your Google Cloud Storage credentials.
 
 ### db
@@ -104,6 +104,56 @@ Varnish cache container used as reverse proxy and front-end cache server:
 
 - `BASIC_USERNAME` - basic http username
 - `BASIC_PASSWORD` - basic http password (hashed using `openssl passwd -apr1`)
+
+## Data
+
+### Bind mounts
+Used to just binding a certain directory or file from the host inside the container. We use:
+- `./__initdb` directory is used to pass the database dump for stack initialization
+
+### Named volumes
+Data that must be persistent across container life cycles are stored in docker volumes:
+- `db_data` (MySQL databases and working directories, attached to `db` service)
+- `elasticsearch_data` (Elasticsearch nodes, attached to `elasticsearch` service)
+- `web_data` (Miscellaneous MediaWiki files and directories that must be persistent by design, attached to `web` service )
+- `images` (MediaWiki upload directory, attached to `web` service and used in `restic` service (read-only))
+- `redis_data` (Redis cache)
+- `varnish_data` (Varnish cache)
+- `matomo_data` (Analytics data)
+- `restic_data` (Space mounted to the `restic` service for operations with snapshots)
+  Docker containers write files to volumes using internal users.
+
+## Log files
+
+Log files are stored in the `_logs` directory.
+
+## Keeping up to date
+
+**Make a full backup of the wiki, including both the database and the files.**
+While the upgrade scripts are well-maintained and robust, things could still go awry.
+```sh
+cd <docker stack directory>
+docker-compose exec db /bin/bash -c 'mysqldump --all-databases -uroot -p"$MYSQL_ROOT_PASSWORD" 2>/dev/null | gzip | base64 -w 0' | base64 -d > backup_$(date +"%Y%m%d_%H%M%S").sql.gz
+docker-compose exec web /bin/bash -c 'tar -c $MW_VOLUME $MW_HOME/images 2>/dev/null | base64 -w 0' | base64 -d > backup_$(date +"%Y%m%d_%H%M%S").tar
+```
+
+For picking up the latest changes, stop, rebuild and start containers:
+```sh
+cd <docker stack directory>
+git pull
+docker-compose up -d
+```
+The upgrade process is fully automated and includes the launch of all necessary maintenance scripts.
+
+## Purging homepage SMW caches
+
+The image is configured to automatically purge the homepage once per hour. You can
+configure this using the following environment variables:
+
+```
+MW_CACHE_PURGE_PAUSE=3600
+MW_CACHE_PURGE_PAGE=Main_Page
+```
 
 ---
 
