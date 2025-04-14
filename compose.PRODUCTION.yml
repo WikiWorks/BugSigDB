@@ -73,7 +73,7 @@ services:
           if [ -f "/data/database.sql.gz" ]; then
             echo "Copying database backup to Google Cloud Storage..."
             rclone copy /data/database.sql.gz ":google cloud storage:backups.bugsigdb.org/database$${RCLONE_DATE}.sql.gz" \
-            --gcs-service-account-file "$${SERVICE_ACCOUNT_FILE}" --gcs-bucket-policy-only
+              --gcs-service-account-file "$${SERVICE_ACCOUNT_FILE}" --gcs-bucket-policy-only
 
             echo "Removing local database backup file..."
             rm /data/database.sql.gz
@@ -83,13 +83,13 @@ services:
 
           echo "Checking image directories..."
           IMAGES_SRC="/data/images/"
-          for dir in "$${IMAGES_SRC}"[0-9a-f][0-9a-f]; do
+          for dir in "$${IMAGES_SRC}"[0-9a-f]; do
           if [ -d "$${dir}" ] && [ "$$(ls -A "$${dir}")" ]; then
-          echo "Syncing non-empty directory $${dir}..."
-          rclone sync "$${dir}" ":google cloud storage:backups.bugsigdb.org/images/$$(basename "$${dir}")" \
-          --gcs-service-account-file "$${SERVICE_ACCOUNT_FILE}" --gcs-bucket-policy-only
+            echo "Syncing non-empty directory $${dir}..."
+            rclone sync "$${dir}" ":google cloud storage:backups.bugsigdb.org/images/$$(basename "$${dir}")" \
+              --gcs-service-account-file "$${SERVICE_ACCOUNT_FILE}" --gcs-bucket-policy-only
           else
-          echo "Skipping empty or non-existent directory $${dir}."
+            echo "Skipping empty or non-existent directory $${dir}."
           fi
           done
 
